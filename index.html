@@ -39,10 +39,20 @@
     }
 
     .weather {
-      background: #1f2937;
-      padding: 14px 18px;
-      border-radius: 12px;
-    }
+
+  background:
+    rgba(255,255,255,.12);
+
+  backdrop-filter:
+    blur(12px);
+
+  border:
+    1px solid rgba(255,255,255,.08);
+
+  padding: 14px 18px;
+
+  border-radius: 14px;
+}
 
     .search input {
       width: 320px;
@@ -52,11 +62,28 @@
     }
 
     .section {
-      background: #1f2937;
-      padding: 20px;
-      border-radius: 16px;
-      margin-bottom: 30px;
-    }
+
+  background:
+    rgba(31, 41, 55, 0.45);
+
+  backdrop-filter:
+    blur(14px);
+
+  -webkit-backdrop-filter:
+    blur(14px);
+
+  border:
+    1px solid rgba(255,255,255,.08);
+
+  box-shadow:
+    0 8px 32px rgba(0,0,0,.25);
+
+  padding: 20px;
+
+  border-radius: 20px;
+
+  margin-bottom: 30px;
+}
 
     .header {
       display: flex;
@@ -106,26 +133,36 @@
     }
 
     .card {
-  background: rgba(55,65,81,.92);
+
+  background:
+    rgba(55, 65, 81, 0.45);
+
+  backdrop-filter:
+    blur(10px);
+
+  border:
+    1px solid rgba(255,255,255,.06);
+
+  box-shadow:
+    0 4px 20px rgba(0,0,0,.2);
 
   border-radius: 18px;
 
   padding: 22px;
 
-  cursor: grab;
-
   transition: .2s;
 
   display: flex;
+
   flex-direction: column;
+
   align-items: center;
+
   justify-content: center;
 
   text-align: center;
 
   min-height: 170px;
-
-  backdrop-filter: blur(10px);
 }
 
 .card:hover {
@@ -135,6 +172,10 @@
 
   background:
     rgba(75,85,99,.95);
+}
+
+.icon-link {
+  display: inline-block;
 }
 
     .card.dragging {
@@ -436,14 +477,23 @@ document.getElementById("bgBtn")
           card.dataset.index = index;
 
           card.innerHTML = `
+  <a
+    href="${bookmark.url}"
+    target="_blank"
+    class="icon-link"
+  >
 
-              <img src="${favicon}">
+    <img src="${favicon}">
 
-              <a href="${bookmark.url}" target="_blank">
-                ${bookmark.name}
-              </a>
+  </a>
 
-                      `;
+  <a
+    href="${bookmark.url}"
+    target="_blank"
+  >
+    ${bookmark.name}
+  </a>
+`;
 
           // drag start
 
@@ -529,34 +579,82 @@ document.getElementById("bgBtn")
 
       async loadWeather() {
 
-        try {
+  if (!navigator.geolocation) {
 
-          const res =
-            await fetch(
-              "https://api.open-meteo.com/v1/forecast?latitude=35.6764&longitude=139.6500&current_weather=true"
-            );
+    document.getElementById("weather")
+      .textContent =
+      "位置情報非対応";
 
-          const data =
-            await res.json();
+    return;
+  }
 
-          const weather =
-            data.current_weather;
+  navigator.geolocation.getCurrentPosition(
 
-          document.getElementById("weather")
-            .innerHTML =
-            `
-            🌤 ${weather.temperature}°C
-            <br>
-            💨 ${weather.windspeed} km/h
-            `;
+    async position => {
 
-        } catch {
+      try {
 
-          document.getElementById("weather")
-            .textContent =
-            "天気取得失敗";
-        }
+        const lat =
+          position.coords.latitude;
+
+        const lon =
+          position.coords.longitude;
+
+        // 天気取得
+
+        const weatherRes =
+          await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+          );
+
+        const weatherData =
+          await weatherRes.json();
+
+        // 都市名取得
+
+        const geoRes =
+          await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
+          );
+
+        const geoData =
+          await geoRes.json();
+
+        const city =
+          geoData.address.city ||
+          geoData.address.town ||
+          geoData.address.village ||
+          "Unknown";
+
+        const weather =
+          weatherData.current_weather;
+
+        document.getElementById("weather")
+          .innerHTML =
+          `
+          📍 ${city}
+          <br>
+          🌤 ${weather.temperature}°C
+          <br>
+          💨 ${weather.windspeed} km/h
+          `;
+
+      } catch {
+
+        document.getElementById("weather")
+          .textContent =
+          "天気取得失敗";
       }
+    },
+
+    () => {
+
+      document.getElementById("weather")
+        .textContent =
+        "位置情報許可が必要";
+    }
+  );
+}
 
       loadBackground() {
 
