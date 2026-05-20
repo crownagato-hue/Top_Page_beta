@@ -1,10 +1,600 @@
 <!DOCTYPE html>
-<html land="en">
+<html lang="ja">
 <head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width,initial-scale=1.0">
- <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Dashboard</title>
+
+  <style>
+
+    body {
+      margin: 0;
+      padding: 30px;
+      background: #111827;
+      color: white;
+      font-family: sans-serif;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .top {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .clock {
+      font-size: 40px;
+      font-weight: bold;
+    }
+
+    .date {
+      color: #cbd5e1;
+      margin-top: 5px;
+    }
+
+    .weather {
+      background: #1f2937;
+      padding: 14px 18px;
+      border-radius: 12px;
+    }
+
+    .search input {
+      width: 320px;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+    }
+
+    .section {
+      background: #1f2937;
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 30px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .trash {
+      background: #dc2626;
+      padding: 10px 16px;
+      border-radius: 12px;
+    }
+
+    .trash.drag-over {
+      transform: scale(1.05);
+    }
+
+    .form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+
+    .form input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+    }
+
+    button {
+      border: none;
+      background: #2563eb;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fill, minmax(220px, 1fr));
+
+      gap: 15px;
+    }
+
+    .card {
+  background: rgba(55,65,81,.92);
+
+  border-radius: 18px;
+
+  padding: 22px;
+
+  cursor: grab;
+
+  transition: .2s;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  min-height: 170px;
+
+  backdrop-filter: blur(10px);
+}
+
+.card:hover {
+  transform:
+    translateY(-5px)
+    scale(1.02);
+
+  background:
+    rgba(75,85,99,.95);
+}
+
+    .card.dragging {
+      opacity: .5;
+    }
+
+    .card-top {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .card img {
+  width: 64px;
+  height: 64px;
+
+  border-radius: 16px;
+
+  background: white;
+
+  padding: 10px;
+
+  object-fit: contain;
+
+  margin-bottom: 16px;
+}
+
+    .card a {
+  color: white;
+
+  text-decoration: none;
+
+  font-weight: bold;
+
+  font-size: 17px;
+
+  margin-top: 8px;
+}
+
+    .url {
+      margin-top: 10px;
+      color: #cbd5e1;
+      font-size: 13px;
+      word-break: break-all;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 160px;
+      border-radius: 12px;
+      border: none;
+      padding: 14px;
+    }
+
+  </style>
+
 </head>
+
 <body>
+
+  <h1>My Dashboard</h1>
+
+  <div class="top">
+
+    <div>
+      <div class="clock" id="clock"></div>
+      <div class="date" id="date"></div>
+    </div>
+
+    <div class="weather" id="weather">
+      Loading...
+    </div>
+
+    <div class="search">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Google検索..."
+      >
+    </div>
+
+  </div>
+
+  <div class="section">
+
+    <div class="header">
+
+      <h2>Bookmarks</h2>
+
+      <div class="trash" id="trash">
+        🗑 ゴミ箱
+      </div>
+
+    </div>
+
+    <div class="form">
+
+      <input
+        type="text"
+        id="siteName"
+        placeholder="サイト名"
+      >
+
+      <input
+        type="text"
+        id="siteUrl"
+        placeholder="https://example.com"
+      >
+
+      <button id="addBtn">
+        追加
+      </button>
+
+    </div>
+
+    <div class="grid" id="bookmarks"></div>
+
+  </div>
+
+  
+<div class="section">
+
+  <h2>Background</h2>
+
+  <div class="form">
+
+    <input
+      type="text"
+      id="bgUrl"
+      placeholder="背景画像URL"
+    >
+
+    <button id="bgBtn">
+      背景変更
+    </button>
+
+  </div>
+
+</div>
+
+
+  <script>
+
+    class Dashboard {
+
+      constructor() {
+
+        this.bookmarks =
+          JSON.parse(
+            localStorage.getItem("bookmarks")
+          ) || [
+            {
+              name: "YouTube",
+              url: "https://youtube.com"
+            }
+          ];
+
+        this.draggedIndex = null;
+
+        this.init();
+      }
+
+      init() {
+
+        this.cacheElements();
+
+        this.bindEvents();
+
+        this.renderBookmarks();
+
+        this.startClock();
+
+        this.loadWeather();
+       
+        this.loadBackground();
+      }
+
+      cacheElements() {
+
+        this.bookmarksEl =
+          document.getElementById("bookmarks");
+
+        this.trashEl =
+          document.getElementById("trash");
+      }
+
+      bindEvents() {
+
+
+
+document.getElementById("bgBtn")
+  .addEventListener("click", () => {
+
+  this.changeBackground();
+});
+
+
+
+        // Add bookmark
+
+        document.getElementById("addBtn")
+          .addEventListener("click", () => {
+
+          this.addBookmark();
+        });
+
+        // Search
+
+        document.getElementById("searchInput")
+          .addEventListener("keydown", e => {
+
+          if (e.key === "Enter") {
+
+            location.href =
+              `https://www.google.com/search?q=${encodeURIComponent(e.target.value)}`;
+          }
+        });
+
+
+
+        // Trash
+
+        this.trashEl.addEventListener("dragover", e => {
+
+          e.preventDefault();
+
+          this.trashEl.classList.add("drag-over");
+        });
+
+        this.trashEl.addEventListener("dragleave", () => {
+
+          this.trashEl.classList.remove("drag-over");
+        });
+
+        this.trashEl.addEventListener("drop", () => {
+
+          if (this.draggedIndex === null) return;
+
+          this.bookmarks.splice(this.draggedIndex, 1);
+
+          this.saveBookmarks();
+
+          this.renderBookmarks();
+
+          this.draggedIndex = null;
+
+          this.trashEl.classList.remove("drag-over");
+        });
+      }
+
+      addBookmark() {
+
+        const name =
+          document.getElementById("siteName").value;
+
+        const url =
+          document.getElementById("siteUrl").value;
+
+        if (!name || !url) return;
+
+        this.bookmarks.push({ name, url });
+
+        this.saveBookmarks();
+
+        this.renderBookmarks();
+
+        document.getElementById("siteName").value = "";
+
+        document.getElementById("siteUrl").value = "";
+      }
+
+      saveBookmarks() {
+
+        localStorage.setItem(
+          "bookmarks",
+          JSON.stringify(this.bookmarks)
+        );
+      }
+
+      renderBookmarks() {
+
+        this.bookmarksEl.innerHTML = "";
+
+        this.bookmarks.forEach((bookmark, index) => {
+
+          const domain =
+            new URL(bookmark.url).hostname;
+
+          const favicon =
+            `https://icon.horse/icon/${domain}`;
+
+          const card =
+            document.createElement("div");
+
+          card.className = "card";
+
+          card.draggable = true;
+
+          card.dataset.index = index;
+
+          card.innerHTML = `
+
+              <img src="${favicon}">
+
+              <a href="${bookmark.url}" target="_blank">
+                ${bookmark.name}
+              </a>
+
+                      `;
+
+          // drag start
+
+          card.addEventListener("dragstart", () => {
+
+            this.draggedIndex = index;
+
+            card.classList.add("dragging");
+          });
+
+          // drag end
+
+          card.addEventListener("dragend", () => {
+
+            card.classList.remove("dragging");
+          });
+
+          // drag over
+
+          card.addEventListener("dragover", e => {
+
+            e.preventDefault();
+          });
+
+          // drop
+
+          card.addEventListener("drop", e => {
+
+            e.preventDefault();
+
+            const targetIndex =
+              Number(card.dataset.index);
+
+            if (this.draggedIndex === targetIndex)
+              return;
+
+            const moved =
+              this.bookmarks.splice(
+                this.draggedIndex,
+                1
+              )[0];
+
+            this.bookmarks.splice(
+              targetIndex,
+              0,
+              moved
+            );
+
+            this.saveBookmarks();
+
+            this.renderBookmarks();
+          });
+
+          this.bookmarksEl.appendChild(card);
+        });
+      }
+
+      
+      startClock() {
+
+        const update = () => {
+
+          const now = new Date();
+
+          document.getElementById("clock")
+            .textContent =
+            now.toLocaleTimeString("ja-JP");
+
+          document.getElementById("date")
+            .textContent =
+            now.toLocaleDateString("ja-JP", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              weekday: "long"
+            });
+        };
+
+        update();
+
+        setInterval(update, 1000);
+      }
+
+      async loadWeather() {
+
+        try {
+
+          const res =
+            await fetch(
+              "https://api.open-meteo.com/v1/forecast?latitude=35.6764&longitude=139.6500&current_weather=true"
+            );
+
+          const data =
+            await res.json();
+
+          const weather =
+            data.current_weather;
+
+          document.getElementById("weather")
+            .innerHTML =
+            `
+            🌤 ${weather.temperature}°C
+            <br>
+            💨 ${weather.windspeed} km/h
+            `;
+
+        } catch {
+
+          document.getElementById("weather")
+            .textContent =
+            "天気取得失敗";
+        }
+      }
+
+      loadBackground() {
+
+  const savedBg =
+    localStorage.getItem("background");
+
+  if (!savedBg) return;
+
+  document.body.style.backgroundImage =
+    `
+    linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.7)),
+    url("${savedBg}")
+    `;
+}
+
+changeBackground() {
+
+  const url =
+    document.getElementById("bgUrl").value;
+
+  if (!url) return;
+
+  localStorage.setItem(
+    "background",
+    url
+  );
+
+  document.body.style.backgroundImage =
+    `
+    linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.7)),
+    url("${url}")
+    `;
+}
+    }
+
+    new Dashboard();
+
+  </script>
+
 </body>
 </html>
